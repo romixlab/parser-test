@@ -2,7 +2,9 @@
 name = "parser-test"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Roman Isaikin <romix.lab@gmail.com>"]
+license = "MIT"
+description = "Declarative tester for parsers"
+repository = "https://github.com/romixlab/parser-test"
 
 [dependencies]
