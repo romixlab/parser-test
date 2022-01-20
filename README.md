@@ -1,7 +1,7 @@
 This crate allows you to write parser's tests like follows:
 ```rust
 let input = "#( a b #items x y )*";
-let spans = "   ^ ^ ^----^ ^ ^ ";
+let spans = "   ^ ^ ^----^ ^ ^   ";
 let expected = [
     Rule::token,
     Rule::token,
@@ -10,34 +10,11 @@ let expected = [
     Rule::token,
 ];
 ```
-Highlight each token with `^`, `^^` or `^---^` to indicate it's span.
-Any parser can be used, as long as you implement `TestToken` trait for it's output.
+Highlight each token with `^`, `^^` or `^---^` to indicate it's span. `parser_test::test()` will make sure that
+parser output containts excactly those tokens in specified positions.
 
-For example:
-
-```rust
-struct TestToken {
-    start: usize,
-    end: usize,
-    rule: Rule,
-}
-
-impl parser_test::Token for TestToken {
-    type Rule = Rule;
-
-    fn start(&self) -> usize {
-        self.start
-    }
-
-    fn end(&self) -> usize {
-        self.end
-    }
-
-    fn rule(&self) -> Self::Rule {
-        self.rule
-    }
-}
-```
+Any parser can be used, as long as you implement `Token` trait for it's output.
+Generic `TestToken` is provided and can probably be used for all use cases.
 
 So far this crate is used to test pest parsers:
 

@@ -1,10 +1,12 @@
 [package]
 name = "parser-test"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Roman Isaikin <romix.lab@gmail.com>"]
 license = "MIT"
 description = "Declarative tester for parsers"
 repository = "https://github.com/romixlab/parser-test"
+keywords = ["pest", "parser", "grammar", "lexer"]
+categories = ["parsing"]
 
 [dependencies]

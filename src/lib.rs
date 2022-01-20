@@ -11,6 +11,26 @@ pub trait Token {
     fn rule(&self) -> Self::Rule;
 }
 
+pub struct TestToken<R> {
+    pub start: usize,
+    pub end: usize,
+    pub rule: R,
+}
+
+impl<R: Copy> Token for TestToken<R> {
+    type Rule = R;
+
+    fn start(&self) -> usize {
+        self.start
+    }
+    fn end(&self) -> usize {
+        self.end
+    }
+    fn rule(&self) -> Self::Rule {
+        self.rule
+    }
+}
+
 pub fn test<O, E, R>(output: O, expected: E, spans: &str) -> bool
     where O: IntoIterator,
           <O as IntoIterator>::Item: Token<Rule = R>,
