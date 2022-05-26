@@ -42,10 +42,10 @@ pub fn test<O, E, R>(output: O, expected: E, spans: &str) -> bool
     for o in output {
         let e = expected.next().expect("More output than expected");
         if o.rule() != e.0 {
-            panic!("Expected rule: {:?} got: {:?} at pos:{}", o.rule(), e.0, o.start());
+            panic!("Expected rule: {:?} got: {:?} at pos:{}", e.0, o.rule(), o.start());
         }
         if o.start() != e.1.0 || o.end() != e.1.1 {
-            panic!("Spans do not match: [{}, {}] vs [{}, {}]", o.start(), o.end(), e.1.0, e.1.1);
+            panic!("Spans do not match on rule: {:?}: [{}, {}] vs [{}, {}]", o.rule(), o.start(), o.end(), e.1.0, e.1.1);
         }
     }
     assert!(expected.next().is_none(), "Expected more output");

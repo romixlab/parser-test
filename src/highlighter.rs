@@ -1,12 +1,12 @@
 use std::str::{CharIndices};
 use std::iter::Peekable;
 
-/// Helper type that create (start, end) iterator over strings like "^ ^--^ ^^".
+/// Helper type that create (start, end) iterator over strings like "| ^--^ ^^".
 /// Allows to write parser tests as follows:
 /// test(
 ///      "struct X { field: u32 }",
-///      "       ^   ^---^  ^-^  ",
-///      type_name("My"),
+///      "       |   ^---^  ^-^  ",
+///      type_name("X"),
 ///      ident_name("field"),
 ///      any_ty("u32")
 /// );
@@ -27,7 +27,7 @@ impl<'a> Iterator for Highlighter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.spans.next() {
             Some((mut start, mut c)) => {
-                assert!(c == '^' || c.is_whitespace());
+                assert!(c == '^' || c == '|' || c.is_whitespace());
 
                 while c.is_whitespace() {
                     start += 1;
@@ -57,6 +57,14 @@ impl<'a> Iterator for Highlighter<'a> {
                                 continue;
                             } else if c == '^' {
                                 end = pos;
+                                match self.spans.peek() {
+                                    Some((_, c)) => {
+                                        if c == '^' {
+                                            break;
+                                        }
+                                    },
+                                    None => {}
+                                }
                             } else {
                                 panic!("Wrong highlighter string: only '^', '-' and ' ' are allowed");
                             }
@@ -103,6 +111,38 @@ mod tests {
         let mut hl = Highlighter::new("^ ^");
         assert_eq!(hl.next(), Some((0, 0)));
         assert_eq!(hl.next(), Some((2, 2)));
+        assert_eq!(hl.next(), None);
+    }
+
+    #[test]
+    fn double_caret_single_caret() {
+        let mut hl = Highlighter::new("^^^");
+        assert_eq!(hl.next(), Some((0, 1)));
+        assert_eq!(hl.next(), Some((2, 2)));
+        assert_eq!(hl.next(), None);
+    }
+
+    #[test]
+    fn two_double_carets() {
+        let mut hl = Highlighter::new("^^^^");
+        assert_eq!(hl.next(), Some((0, 1)));
+        assert_eq!(hl.next(), Some((2, 3)));
+        assert_eq!(hl.next(), None);
+    }
+
+    #[test]
+    fn long_span_single_caret() {
+        let mut hl = Highlighter::new("^--^^");
+        assert_eq!(hl.next(), Some((0, 3)));
+        assert_eq!(hl.next(), Some((4, 4)));
+        assert_eq!(hl.next(), None);
+    }
+
+    #[test]
+    fn long_span_double_caret() {
+        let mut hl = Highlighter::new("^--^^^");
+        assert_eq!(hl.next(), Some((0, 3)));
+        assert_eq!(hl.next(), Some((4, 5)));
         assert_eq!(hl.next(), None);
     }
 
