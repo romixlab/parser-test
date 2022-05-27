@@ -27,7 +27,7 @@ impl<'a> Iterator for Highlighter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.spans.next() {
             Some((mut start, mut c)) => {
-                while c.is_whitespace() {
+                while c.is_whitespace() || c == 'I' {
                     start += 1;
                     c = match self.spans.next() {
                         Some((_, c)) => c,
@@ -44,7 +44,6 @@ impl<'a> Iterator for Highlighter<'a> {
                                 }
                                 '^' => {
                                     return Some((start, pos));
-                                    break;
                                 }
                                 _ => panic!("Unexpected symbol in ^ span: {} at: {}", c, pos)
                             }
@@ -150,6 +149,15 @@ mod tests {
         assert_eq!(hl.next(), Some((14, 19)));
         assert_eq!(hl.next(), None);
     }
+
+    #[test]
+    fn alternate_space() {
+        let mut hl = Highlighter::new("II^^^^");
+        assert_eq!(hl.next(), Some((2, 3)));
+        assert_eq!(hl.next(), Some((4, 5)));
+        assert_eq!(hl.next(), None);
+    }
+
 
     #[test]
     fn unterminated_span() {
