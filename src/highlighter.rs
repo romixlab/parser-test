@@ -27,8 +27,6 @@ impl<'a> Iterator for Highlighter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.spans.next() {
             Some((mut start, mut c)) => {
-                assert!(c == '^' || c == '|' || c.is_whitespace());
-
                 while c.is_whitespace() {
                     start += 1;
                     c = match self.spans.next() {
@@ -37,44 +35,31 @@ impl<'a> Iterator for Highlighter<'a> {
                     };
                 }
 
-                let mut end = start;
-                loop {
-                    match self.spans.next() {
-                        Some((pos, c)) => {
-                            if c.is_whitespace() {
-                                break;
-                            } else if c == '-' {
-                                match self.spans.peek() {
-                                    Some((_, c)) => {
-                                        if c.is_whitespace() {
-                                            panic!("Wrong highlighter string: ^--^ sequence unterminated");
-                                        }
-                                    }
-                                    None => {
-                                        panic!("Wrong highlighter string: ^--^ sequence unterminated");
-                                    }
+                match c {
+                    '^' => {
+                        while let Some((pos, c)) = self.spans.next() {
+                            match c {
+                                '-' => {
+                                    continue;
                                 }
-                                continue;
-                            } else if c == '^' {
-                                end = pos;
-                                match self.spans.peek() {
-                                    Some((_, c)) => {
-                                        if c == '^' {
-                                            break;
-                                        }
-                                    },
-                                    None => {}
+                                '^' => {
+                                    return Some((start, pos));
+                                    break;
                                 }
-                            } else {
-                                panic!("Wrong highlighter string: only '^', '-' and ' ' are allowed");
+                                _ => panic!("Unexpected symbol in ^ span: {} at: {}", c, pos)
                             }
                         }
-                        None => {
-                            break;
-                        }
+                        panic!("Unterminated ^ span at {}", start);
+
+                    }
+                    '|' => {
+                        return Some((start, start));
+
+                    }
+                    _ => {
+                        panic!("Unexpected character: {}, ^, | or whitespace is allowed", c);
                     }
                 }
-                Some((start, end))
             }
             None => None
         }
@@ -86,15 +71,24 @@ mod tests {
     use super::Highlighter;
 
     #[test]
-    fn single_caret_span() {
-        let mut hl = Highlighter::new("^");
+    fn single_span() {
+        let mut hl = Highlighter::new("|");
         assert_eq!(hl.next(), Some((0, 0)));
         assert_eq!(hl.next(), None);
     }
 
     #[test]
-    fn single_caret_span_after_whitespace() {
-        let mut hl = Highlighter::new("   ^");
+    fn many_single_spans() {
+        let mut hl = Highlighter::new("|||");
+        assert_eq!(hl.next(), Some((0, 0)));
+        assert_eq!(hl.next(), Some((1, 1)));
+        assert_eq!(hl.next(), Some((2, 2)));
+        assert_eq!(hl.next(), None);
+    }
+
+    #[test]
+    fn single_span_after_whitespace() {
+        let mut hl = Highlighter::new("   |");
         assert_eq!(hl.next(), Some((3, 3)));
         assert_eq!(hl.next(), None);
     }
@@ -107,16 +101,16 @@ mod tests {
     }
 
     #[test]
-    fn two_single_carets_spans() {
-        let mut hl = Highlighter::new("^ ^");
+    fn two_single_bars() {
+        let mut hl = Highlighter::new("| |");
         assert_eq!(hl.next(), Some((0, 0)));
         assert_eq!(hl.next(), Some((2, 2)));
         assert_eq!(hl.next(), None);
     }
 
     #[test]
-    fn double_caret_single_caret() {
-        let mut hl = Highlighter::new("^^^");
+    fn double_caret_single_bar() {
+        let mut hl = Highlighter::new("^^|");
         assert_eq!(hl.next(), Some((0, 1)));
         assert_eq!(hl.next(), Some((2, 2)));
         assert_eq!(hl.next(), None);
@@ -131,8 +125,8 @@ mod tests {
     }
 
     #[test]
-    fn long_span_single_caret() {
-        let mut hl = Highlighter::new("^--^^");
+    fn long_span_single_span() {
+        let mut hl = Highlighter::new("^--^|");
         assert_eq!(hl.next(), Some((0, 3)));
         assert_eq!(hl.next(), Some((4, 4)));
         assert_eq!(hl.next(), None);
@@ -148,7 +142,7 @@ mod tests {
 
     #[test]
     fn many_spans() {
-        let mut hl = Highlighter::new("^-^ ^^ ^--^ ^ ^----^  ");
+        let mut hl = Highlighter::new("^-^ ^^ ^--^ | ^----^  ");
         assert_eq!(hl.next(), Some((0, 2)));
         assert_eq!(hl.next(), Some((4, 5)));
         assert_eq!(hl.next(), Some((7, 10)));
@@ -167,6 +161,20 @@ mod tests {
     #[test]
     fn interminated_span2() {
         let mut hl = Highlighter::new("^-- ");
+        let r = std::panic::catch_unwind(move || hl.next());
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn space_after_caret() {
+        let mut hl = Highlighter::new("^ ");
+        let r = std::panic::catch_unwind(move || hl.next());
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn bar_after_caret() {
+        let mut hl = Highlighter::new("^|");
         let r = std::panic::catch_unwind(move || hl.next());
         assert!(r.is_err());
     }
