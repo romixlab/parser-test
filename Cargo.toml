@@ -1,6 +1,6 @@
 [package]
 name = "parser-test"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Roman Isaikin <romix.lab@gmail.com>"]
 license = "MIT"
