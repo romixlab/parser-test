@@ -31,13 +31,14 @@ impl<R: Copy> Token for TestToken<R> {
     }
 }
 
-pub fn test<O, E, R>(output: O, mut expected: E, spans: &str) -> bool
+pub fn test<O, E, R>(output: O, expected: E, spans: &str) -> bool
     where O: IntoIterator,
           <O as IntoIterator>::Item: Token<Rule = R>,
-          E: Iterator<Item = R>,
+          E: IntoIterator<Item = R>,
           R: Eq + Sized + Debug,
 {
     let mut expected_spans = highlighter::Highlighter::new(spans);
+    let mut expected = expected.into_iter();
     for actual_output in output {
         let expected_span = expected_spans.next().expect("Not enough spans defined");
         let expected_output = expected.next().expect("More output than expected");
