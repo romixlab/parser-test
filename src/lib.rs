@@ -31,24 +31,35 @@ impl<R: Copy> Token for TestToken<R> {
     }
 }
 
-pub fn test<O, E, R>(output: O, expected: E, spans: &str) -> bool
+pub fn test<O, E, R>(output: O, mut expected: E, spans: &str) -> bool
     where O: IntoIterator,
           <O as IntoIterator>::Item: Token<Rule = R>,
-          E: IntoIterator<Item = R>,
+          E: Iterator<Item = R>,
           R: Eq + Sized + Debug,
 {
-    let hl = highlighter::Highlighter::new(spans);
-    let mut expected = expected.into_iter().zip(hl);
-    for o in output {
-        let e = expected.next().expect("More output than expected");
-        if o.rule() != e.0 {
-            panic!("Expected rule: {:?} got: {:?} at pos:{}", e.0, o.rule(), o.start());
+    let mut expected_spans = highlighter::Highlighter::new(spans);
+    for actual_output in output {
+        let expected_span = expected_spans.next().expect("Not enough spans defined");
+        let expected_output = expected.next().expect("More output than expected");
+        if actual_output.rule() != expected_output {
+            panic!("Expected rule: {:?} got: {:?} at pos:{}",
+                   expected_output,
+                   actual_output.rule(),
+                   actual_output.start()
+            );
         }
-        if o.start() != e.1.0 || o.end() != e.1.1 {
-            panic!("Spans do not match on rule: {:?}: [{}, {}] vs [{}, {}]", o.rule(), o.start(), o.end(), e.1.0, e.1.1);
+        if actual_output.start() != expected_span.0 || actual_output.end() != expected_span.1 {
+            panic!("Spans do not match on rule: {:?}: [{}, {}] vs [{}, {}]",
+                   actual_output.rule(),
+                   actual_output.start(),
+                   actual_output.end(),
+                   expected_span.0,
+                   expected_span.1
+            );
         }
     }
     assert!(expected.next().is_none(), "Expected more output");
+    assert!(expected_spans.next().is_none(), "Defined more spans than expected rules");
 
     true
 }

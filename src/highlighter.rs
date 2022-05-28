@@ -10,6 +10,8 @@ use std::iter::Peekable;
 ///      ident_name("field"),
 ///      any_ty("u32")
 /// );
+///
+/// There is also an alternate space symbol: I that can be helpful for visual alignment.
 pub struct Highlighter<'a> {
     spans: Peekable<CharIndices<'a>>,
 }
@@ -167,8 +169,23 @@ mod tests {
     }
 
     #[test]
-    fn interminated_span2() {
+    fn unterminated_span2() {
         let mut hl = Highlighter::new("^-- ");
+        let r = std::panic::catch_unwind(move || hl.next());
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn unterminated_span3() {
+        let mut hl = Highlighter::new("^^^");
+        let _ = hl.next();
+        let r = std::panic::catch_unwind(move || hl.next());
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn unterminated_span4() {
+        let mut hl = Highlighter::new("^");
         let r = std::panic::catch_unwind(move || hl.next());
         assert!(r.is_err());
     }
